@@ -98,11 +98,11 @@ const SimpleLogin = ({ onLogin }: { onLogin: () => void }) => {
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Email Identity</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl outline-none focus:border-indigo-600 transition-all font-bold text-slate-700" placeholder="remote@admin.co" />
+            <input type="email" name="email" autoComplete="username" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl outline-none focus:border-indigo-600 transition-all font-bold text-slate-700" placeholder="remote@admin.co" />
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Passphrase</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl outline-none focus:border-indigo-600 transition-all font-bold text-slate-700" placeholder="••••••••" />
+            <input type="password" name="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-2xl outline-none focus:border-indigo-600 transition-all font-bold text-slate-700" placeholder="••••••••" />
           </div>
           {error && <p className="text-rose-500 text-xs font-black text-center bg-rose-50 py-2 rounded-lg">{error}</p>}
           <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-[20px] text-xs font-black uppercase tracking-widest hover:scale-[1.02] transition-all shadow-lg">Authenticate</button>
@@ -133,6 +133,7 @@ const App = () => {
   const [selectedInstance, setSelectedInstance] = useState<number | 'all'>('all');
   const [baseUrl, setBaseUrl] = useState(getInitialBaseUrl());
   const [isSimulationMode, setIsSimulationMode] = useState(false);
+  const [isGlobalLoading, setIsGlobalLoading] = useState(false);
 
   // Real Data States
   const [groups, setGroups] = useState<any[]>([]);
@@ -163,6 +164,13 @@ const App = () => {
   // ... existing detailed code ...
 
   if (!isAuthenticated) return <SimpleLogin onLogin={() => setIsAuthenticated(true)} />;
+
+  if (isGlobalLoading) return (
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-10 flex-col gap-6">
+      <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      <p className="text-indigo-400 font-mono text-xs uppercase animate-pulse">Initializing Neural Core...</p>
+    </div>
+  );
 
 
   // --- Helpers ---
@@ -348,13 +356,20 @@ const App = () => {
   }
 
   // --- Fetch Logic ---
+  // --- Fetch Logic ---
   useEffect(() => {
-    apiCall(`/api/groups`).then(d => setGroups(d));
-    apiCall(`/api/members`).then(d => setContacts(d));
-    apiCall('/api/social/birthdays/upcoming?days=30').then(d => setBirthdays(d));
-    apiCall('/api/social/linkedin/recent-posts?days=7').then(d => setLinkedinActivity(d));
-    apiCall('/api/inbox/high-value').then(d => setAiQueue(d));
-    apiCall('/api/dashboard/stats').then(d => setStats({ totalGroups: d.total_groups, saGroups: d.sa_groups, eoGroups: d.eo_groups, monitoredContacts: d.monitored_contacts, highValueMessages: d.high_value_messages_24h, pendingDrafts: d.pending_drafts }));
+    setIsGlobalLoading(true);
+    const p1 = apiCall(`/api/groups`).then(d => setGroups(d));
+    const p2 = apiCall(`/api/members`).then(d => setContacts(d));
+    const p3 = apiCall('/api/social/birthdays/upcoming?days=30').then(d => setBirthdays(d));
+    const p4 = apiCall('/api/social/linkedin/recent-posts?days=7').then(d => setLinkedinActivity(d));
+    const p5 = apiCall('/api/inbox/high-value').then(d => setAiQueue(d));
+    const p6 = apiCall('/api/dashboard/stats').then(d => setStats({ totalGroups: d.total_groups, saGroups: d.sa_groups, eoGroups: d.eo_groups, monitoredContacts: d.monitored_contacts, highValueMessages: d.high_value_messages_24h, pendingDrafts: d.pending_drafts }));
+
+    Promise.allSettled([p1, p2, p3, p4, p5, p6]).then(() => {
+      // Small delay to ensure smooth transition
+      setTimeout(() => setIsGlobalLoading(false), 800);
+    });
   }, [baseUrl]);
 
   // --- Navigation Helpers ---
