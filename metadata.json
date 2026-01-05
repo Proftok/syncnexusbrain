@@ -1,0 +1,8 @@
+{
+  "name": "SyncNexus Brain Core 5",
+  "description": "Enterprise Data Foundation with restored Brain Core intelligence layer, hybrid AI routing, and Evolution API integration.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
