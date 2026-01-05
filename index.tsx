@@ -988,9 +988,21 @@ DRAFTING_STYLE: ${config.draftStyle}
                 <div className="h-full flex flex-col space-y-10 animate-in fade-in">
                   <h2 className="text-4xl font-black tracking-tight italic">Nexus Core Shell</h2>
                   <div className="flex-1 bg-slate-950 rounded-[48px] border border-slate-800 shadow-2xl flex flex-col p-2 overflow-hidden">
-                    <div className="p-8 border-b border-slate-800 flex justify-between">
+                    <div className="p-8 border-b border-slate-800 flex justify-between items-center">
                       <div className="flex gap-2"><div className="w-3 h-3 rounded-full bg-rose-500" /><div className="w-3 h-3 rounded-full bg-amber-500" /><div className="w-3 h-3 rounded-full bg-emerald-500" /></div>
-                      <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">HYBRID-MATRIX-{config.aiProvider}</span>
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={() => {
+                            localStorage.removeItem('nexus_auth');
+                            localStorage.removeItem('nexus_config');
+                            window.location.reload();
+                          }}
+                          className="px-4 py-2 bg-rose-900/30 text-rose-400 border border-rose-900/50 rounded-lg text-[10px] font-black uppercase hover:bg-rose-900/50 transition-colors"
+                        >
+                          Logout / Reset
+                        </button>
+                        <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">HYBRID-MATRIX-{config.aiProvider}</span>
+                      </div>
                     </div>
                     <div className="flex-1 overflow-y-auto p-10 font-mono text-[11px] space-y-6">
                       {logs.map(log => (
