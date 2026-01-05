@@ -841,8 +841,10 @@ const App = () => {
             </div>
           </main>
         </div>
-      );
+      )}
+    </>
+  );
 };
 
-      const root = createRoot(document.getElementById('root')!);
-      root.render(<App />);
+const root = createRoot(document.getElementById('root')!);
+root.render(<App />);
