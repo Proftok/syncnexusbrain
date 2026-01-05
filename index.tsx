@@ -37,9 +37,12 @@ const MOCK_DATA: Record<string, any> = {
 
 // --- Config Initializers ---
 const getInitialBaseUrl = () => {
-  const saved = localStorage.getItem('nexus_api_url');
-  if (saved) return saved;
-  return (import.meta as any).env?.VITE_API_BASE_URL || (window as any).VITE_API_BASE_URL || 'http://localhost:3001';
+  // Always prefer the Environment Variable injected by Coolify/Vite
+  const envUrl = (import.meta as any).env?.VITE_API_BASE_URL;
+  if (envUrl && envUrl.includes('http')) return envUrl;
+
+  // Fallback to window injection or localhost (only for local dev)
+  return (window as any).VITE_API_BASE_URL || 'http://localhost:3001';
 };
 
 const getInitialConfig = () => {
@@ -711,11 +714,12 @@ const App = () => {
               <div className="grid gap-10">
                 <section className="bg-white rounded-[48px] border p-12 space-y-8 shadow-sm">
                   <h3 className="text-2xl font-black flex items-center gap-3"><Icons.Sync /> Evolution Bridge</h3>
-                  <div className="grid gap-6">
-                    <input type="text" value={config.evolutionApiUrl} onChange={e => setConfig({ ...config, evolutionApiUrl: e.target.value })} placeholder="API URL" className="w-full bg-slate-50 border p-5 rounded-2xl outline-none" />
-                    <div className="grid grid-cols-2 gap-6">
-                      <input type="password" value={config.evolutionApiKey} onChange={e => setConfig({ ...config, evolutionApiKey: e.target.value })} placeholder="Key" className="bg-slate-50 border p-5 rounded-2xl outline-none" />
-                      <input type="text" value={config.instanceName} onChange={e => setConfig({ ...config, instanceName: e.target.value })} placeholder="Instance" className="bg-slate-50 border p-5 rounded-2xl outline-none" />
+                  <div className="p-6 bg-slate-50 rounded-[24px] border border-slate-100">
+                    <p className="text-xs font-black uppercase text-slate-400 tracking-widest mb-2">Active Connection</p>
+                    <p className="font-mono text-sm text-slate-600 break-all">{config.evolutionApiUrl || 'No API URL Configured'}</p>
+                    <div className="flex gap-4 mt-4">
+                      <span className="px-3 py-1 bg-indigo-100 text-indigo-600 rounded-lg text-[10px] font-black uppercase">Instance: {config.instanceName}</span>
+                      {config.instanceName2 && <span className="px-3 py-1 bg-emerald-100 text-emerald-600 rounded-lg text-[10px] font-black uppercase">Instance 2: {config.instanceName2}</span>}
                     </div>
                   </div>
                 </section>
