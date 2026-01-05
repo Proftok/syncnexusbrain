@@ -365,39 +365,43 @@ DRAFTING_STYLE: ${config.draftStyle}
     for (const instance of instancesToSync) {
       if (!instance) continue;
       try {
-        const response = await fetch(`${config.evolutionApiUrl}/group/fetchAllGroups/${instance}`, { headers: { 'apikey': config.evolutionApiKey } });
+        const url = `${config.evolutionApiUrl}/group/fetchAllGroups/${instance}?getParticipants=true`;
+        addLog('info', `Fetching: ${url}`); // Debug Log
+
+        const response = await fetch(url, { headers: { 'apikey': config.evolutionApiKey } });
         const data = await response.json();
 
         if (!Array.isArray(data)) {
           // It might be an error object like { error: 'Instance not found' }
           addLog('error', `Sync failed for ${instance}: ${data?.message || data?.error || JSON.stringify(data)}`);
+          console.error('API Error Payload:', data);
           continue;
         }
 
         const transformed = data.map((g: any) => ({
           group_id: g.id,
-          group_name: g.subject || 'Unnamed',
-          member_count: g.size || 0,
+          group_name: g.subject || g.id.split('@')[0] || 'Unknown Cluster', // Fallback to JID user part
+          member_count: g.size || (g.participants ? g.participants.length : 0),
           group_category: 'whatsapp',
           monitoring_enabled: false,
           jid: g.id,
-          instance_id: instance === config.instanceName ? 1 : 2 // Improved ID binding
+          instance_id: instance === config.instanceName ? 1 : 2
         }));
         allGroups = [...allGroups, ...transformed];
       } catch (err: any) {
-        addLog('error', `Sync failed for ${instance}: ${err.message}`);
+        addLog('error', `Sync CRITICAL ERROR for ${instance}: ${err.message}`);
       }
     }
 
     if (allGroups.length === 0) {
-      addLog('error', `Matrix Empty. Check instance status.`);
+      addLog('error', `Matrix Empty. Check instance status & API Key.`);
       return;
     }
 
     // Deduplicate by JID
     const uniqueGroups = Array.from(new Map(allGroups.map(item => [item.jid, item])).values());
     setGroups(uniqueGroups);
-    addLog('success', `Matrix Synced: ${uniqueGroups.length} groups.`);
+    addLog('success', `Matrix Synced: ${uniqueGroups.length} groups found.`);
   }
 
   async function fetchEvolutionMembers(groupJid: string) {
