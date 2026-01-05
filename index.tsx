@@ -378,9 +378,15 @@ DRAFTING_STYLE: ${config.draftStyle}
           continue;
         }
 
+        if (data.length > 0) {
+          addLog('info', `DEBUG: First Group Keys: ${Object.keys(data[0]).join(', ')}`);
+          // console.log('Sample Group Data:', data[0]); 
+        }
+
         const transformed = data.map((g: any) => ({
           group_id: g.id,
-          group_name: g.subject || g.id.split('@')[0] || 'Unknown Cluster', // Fallback to JID user part
+          // Try every conceivable name field
+          group_name: g.subject || g.name || g.title || g.desc || g.id.split('@')[0],
           member_count: g.size || (g.participants ? g.participants.length : 0),
           group_category: 'whatsapp',
           monitoring_enabled: false,
@@ -865,10 +871,24 @@ DRAFTING_STYLE: ${config.draftStyle}
                               addLog('info', `Processing batch for ${targets.length} clusters...`);
 
                               for (const g of targets) {
+                                // 1. Sync Monitoring Status to Backend DB (Critical for Cron Job)
+                                try {
+                                  await apiCall('/api/groups/upsert', 'POST', {
+                                    jid: g.jid,
+                                    name: g.group_name,
+                                    memberCount: g.member_count,
+                                    monitoringEnabled: g.enable_ai,
+                                    instanceId: g.instance_id
+                                  }, false); // don't mock, real call
+                                } catch (e) {
+                                  console.error(`Failed to save group ${g.group_name}`, e);
+                                }
+
+                                // 2. Perform Frontend Actions
                                 if (g.sync_members) await fetchEvolutionMembers(g.jid);
                                 if (g.sync_history) await fetchEvolutionMessages(g.jid); // Need to update this fn to respect days
+
                                 if (g.enable_ai) {
-                                  // Just a flag update for now, or could trigger a backend 'monitor' flag set
                                   addLog('success', `AI Monitoring Active for ${g.group_name}`);
                                 }
                               }
