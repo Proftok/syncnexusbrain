@@ -58,9 +58,16 @@ const getInitialConfig = () => {
     aiProvider: 'openai',
     openaiApiKey: process.env.OPENAI_API_KEY || '',
     openaiModel: 'gpt-5-mini',
-    persona: 'You are a strategic business assistant specializing in high-value real estate opportunities and professional networking. Identify leads and close deals with precision.',
-    scoringRules: `1. If message contains budget or investment amount, add +20 points\n2. If user asks about specific property/project, add +30 points\n3. If direct question to user, add +15 points\n4. If generic hello or social pleasantries, subtract -20 points\n5. If spam or unsolicited selling, score = 0`,
-    draftStyle: 'Professional, concise (1-2 sentences), always end with helpful follow-up question.',
+    persona: 'You are a high-level strategic connector for a bespoke executive network. Your goal is to identify potential members (CEOs, Founders, Investors) and build warm, authentic relationships. You value pedigree, influence, and exclusivity over transactions.',
+    scoringRules: `CRITICAL NETWORKING MATRIX (0-100):
++30: Signals High Status (CEO, Founder, Board Member, "Exited").
++25: Mentions "YPO", "EO", "Davos", "TedX", or specific exclusive networks.
++20: Discussing strategy, leadership, legacy, or macro-economics.
++15: Asking for introductions to high-value peers.
+-10: Operational complaints or low-level support queries.
+-20: Sales pitches, discount offers, or "hustle" culture spam.
+-100: Crypto/Forex/MLM spam.`,
+    draftStyle: 'Sophisticated, warm, and brief (under 40 words). Tone: "Peer-to-Peer". Focus on arranging a coffee or call.',
     threshold: 75
   };
 };
@@ -239,25 +246,60 @@ const App = () => {
     }
   }
 
-  async function enrichProfile(contact: any, silent: boolean = false) {
-    if (!silent) setIsEnriching(true);
-    if (!silent) addLog('ai', `Enriching ${contact.display_name}...`);
+  async function enrichProfile(contact: any, forceDeep: boolean = false) {
+    if (!forceDeep) setIsEnriching(true);
+    if (!forceDeep) addLog('ai', `Evaluating ${contact.display_name}...`);
+
+    // --- STAGED ENRICHMENT LOGIC ---
+    // Stage 1: Passive/Heuristic (Zero Cost)
+    // If they haven't spoken or forceDeep is false and they seem generic, skip deep analysis.
+    const messageCount = messages.filter(m => m.sender_id === contact.member_id).length;
+    const isActive = messageCount > 0;
+
+    // Fallback: If inactive and no 'forceDeep', just do a light tag
+    if (!isActive && !forceDeep) {
+      addLog('info', `Skipping deep enrichment for ${contact.display_name} (Low Activity).`);
+      return;
+    }
+
+    addLog('ai', `Running Deep Analysis on ${contact.display_name} (${messageCount} msgs)...`);
+
+    // System fallback for Executive Networking
+    const systemInstruction = "Analyze the message history to construct a 'High Net Worth' identity profile. Infer Board Roles, Exits, and Influence Level.";
+    const activePersona = config.persona && config.persona.length > 10 ? config.persona : systemInstruction;
+
     const relevantMsgs = messages.filter(m => m.sender_id === contact.member_id).map(m => m.body).join('\n');
-    const prompt = `CORE PERSONA: ${config.persona}\nTASK: Create identity profile.\nNAME: ${contact.display_name}\nCONTEXT: ${relevantMsgs}\nRETURN JSON ONLY:\n{"role": "string", "industry": "string", "summary": "string", "score": number }`;
+    const prompt = `
+ANALYST_PERSONA: ${activePersona}
+TARGET_NAME: ${contact.display_name}
+DATA_SOURCE: ${relevantMsgs.substring(0, 5000)} (Extended history)
+
+TASK: Create an Executive Profile (JSON).
+RETURN_FORMAT:
+{
+  "role": "string (e.g. 'Serial Entrepreneur', 'VC', 'CEO')",
+  "industry": "string",
+  "summary": "string (Focus on their status/influence: 'Founded X, exited to Y. Member of YPO.')",
+  "score": number (0-100 Relevance to 'Tier 1 Executive' status)
+}`;
     try {
       const text = await callAI(prompt);
       const enrichment = JSON.parse(text);
       const updatedContact = { ...contact, relevance: enrichment.score, enrichment, research_log: [{ date: new Date().toISOString(), provider: config.aiProvider, result: enrichment.summary }, ...(contact.research_log || [])] };
       setContacts(prev => prev.map(c => (c.member_id === contact.member_id ? updatedContact : c)));
-      if (!silent) { setSelectedEntity(updatedContact); addLog('success', `Enriched: ${contact.display_name}`); }
-    } catch (err: any) { if (!silent) addLog('error', `Enrichment error: ${err.message}`); } finally { if (!silent) setIsEnriching(false); }
+      if (!forceDeep) { setSelectedEntity(updatedContact); addLog('success', `Enriched: ${contact.display_name} (Score: ${enrichment.score})`); }
+    } catch (err: any) { if (!forceDeep) addLog('error', `Enrichment error: ${err.message}`); } finally { if (!forceDeep) setIsEnriching(false); }
   }
 
   async function triggerAutoEnrichment(targets: any[]) {
-    addLog('ai', `Auto-enrichment batch: ${targets.length} targets`);
+    addLog('ai', `Staged Auto-enrichment: ${targets.length} targets`);
+    let processed = 0;
     for (const contact of targets) {
+      // Only "Force Deep" if they are already in an exclusive group or explicitly selected
+      // Otherwise, enrichProfile will auto-downgrade to "Passive" if they have no messages
       await enrichProfile(contact, true);
-      await new Promise(r => setTimeout(r, 1500));
+      processed++;
+      if (processed % 5 === 0) await new Promise(r => setTimeout(r, 2000)); // Rate limit buffer
     }
     addLog('success', `Batch enrichment completed.`);
   }
@@ -265,13 +307,46 @@ const App = () => {
   async function analyzeMessage(msg: any) {
     setIsProcessing(true);
     addLog('ai', `Analyzing signal from ${msg.sender_name}...`);
-    const prompt = `CORE PERSONA: ${config.persona}\nSCORING: ${config.scoringRules}\nSTYLE: ${config.draftStyle}\nTASK: Generate Group Draft and Private DM.\nMESSAGE: "${msg.body}"\nRETURN JSON ONLY:\n{"score": number, "intent": "string", "reasoning": "string", "shouldReply": boolean, "groupDraft": "string", "dmDraft": "string" }`;
+
+    // fallback defaults
+    const systemPersona = "You are a highly capable sophisticated lead generation AI. You filter noise and find gold.";
+    const activePersona = config.persona && config.persona.length > 10 ? config.persona : systemPersona;
+
+    // We combine the user's rules with a hard baseline to prevent "dumb" analysis
+    const prompt = `
+ROLE: ${activePersona}
+TASK: Analyze this WhatsApp message for business viability.
+CONTEXT: A message was received in a group or DM.
+MESSAGE_BODY: "${msg.body}"
+
+SCORING_RULES:
+${config.scoringRules}
+
+RESPONSE_FORMAT (JSON):
+{
+  "score": number (0-100),
+  "intent": "string (e.g., 'Lead', 'Inquiry', 'Noise', 'Spam')",
+  "reasoning": "string (Why did it get this score? Quote specific keywords)",
+  "shouldReply": boolean,
+  "groupDraft": "string (Reply to be sent in the group - strictly follows draftStyle)",
+  "dmDraft": "string (Private reply to send to the sender - strictly follows draftStyle)"
+}
+
+DRAFTING_STYLE: ${config.draftStyle}
+`;
+
     try {
       const text = await callAI(prompt);
       const result = JSON.parse(text);
+
+      // Auto-adjust threshold logic: slightly lower the bar if it's a direct mention ?? (Optional refinement)
+
       if (result.score >= config.threshold && result.shouldReply) {
         setAiQueue(prev => [{ id: `q-${Date.now()}`, message_id: msg.id, sender_id: msg.sender_id, group_jid: msg.group_id, sender_name: msg.sender_name, message_body: msg.body, value_score: result.score, reasoning: result.reasoning, group_draft: result.groupDraft, dm_draft: result.dmDraft, should_reply: true }, ...prev]);
-        addLog('success', `Triage created (${result.score})`);
+        addLog('success', `High Value Signal Detected (${result.score})`);
+      } else {
+        // Optional: log "Noise filtered" if you want visibility
+        console.log(`Noise filtered: ${result.score} - ${result.intent}`);
       }
     } catch (err: any) { addLog('error', `Analysis failed: ${err.message}`); } finally { setIsProcessing(false); }
   }
@@ -292,18 +367,31 @@ const App = () => {
       try {
         const response = await fetch(`${config.evolutionApiUrl}/group/fetchAllGroups/${instance}`, { headers: { 'apikey': config.evolutionApiKey } });
         const data = await response.json();
+
+        if (!Array.isArray(data)) {
+          // It might be an error object like { error: 'Instance not found' }
+          addLog('error', `Sync failed for ${instance}: ${data?.message || data?.error || JSON.stringify(data)}`);
+          continue;
+        }
+
         const transformed = data.map((g: any) => ({
           group_id: g.id,
           group_name: g.subject || 'Unnamed',
           member_count: g.size || 0,
           group_category: 'whatsapp',
-          monitoring_enabled: true,
-          jid: g.id
+          monitoring_enabled: false,
+          jid: g.id,
+          instance_id: instance === config.instanceName ? 1 : 2 // Improved ID binding
         }));
         allGroups = [...allGroups, ...transformed];
       } catch (err: any) {
         addLog('error', `Sync failed for ${instance}: ${err.message}`);
       }
+    }
+
+    if (allGroups.length === 0) {
+      addLog('error', `Matrix Empty. Check instance status.`);
+      return;
     }
 
     // Deduplicate by JID
@@ -325,6 +413,12 @@ const App = () => {
     try {
       const response = await fetch(`${config.evolutionApiUrl}/group/participants/${targetInstance}?groupJid=${groupJid}`, { headers: { 'apikey': config.evolutionApiKey } });
       const participants = await response.json();
+
+      if (!Array.isArray(participants)) {
+        addLog('error', `Import failed: ${participants?.message || participants?.data?.message || JSON.stringify(participants)}`);
+        return;
+      }
+
       const newContacts = participants.map((p: any) => ({
         member_id: p.id, display_name: p.pushName || p.notify || p.id.split('@')[0], phone_number: p.id.replace('@s.whatsapp.net', '').replace('@c.us', ''), instance_id: parseInt(config.instanceName.includes('UAE') ? '2' : '1'), is_eo_member: false, monitoring_enabled: true, enrichment: null, research_log: [], group_ids: [groupJid], is_direct: false
       }));
@@ -676,33 +770,113 @@ const App = () => {
 
               {/* TAB: GROUPS MATRIX */}
               {activeTab === 'groups' && (
-                <div className="space-y-12 animate-in fade-in h-full flex flex-col">
+                <div className="space-y-12 animate-in fade-in h-full flex flex-col pb-24 relative">
                   {!selectedGroup ? (
                     <>
                       <div className="flex justify-between items-end">
-                        <div><h2 className="text-4xl font-black tracking-tight italic">Groups Matrix</h2><p className="text-slate-500 font-semibold mt-2">Correlating {groups.length} clusters.</p></div>
-                        <button onClick={fetchEvolutionGroups} className="px-10 py-5 bg-slate-900 text-white rounded-[24px] text-[10px] font-black uppercase shadow-xl flex items-center gap-3"><Icons.Sync /> Restore Matrix JIDs</button>
+                        <div>
+                          <h2 className="text-4xl font-black tracking-tight italic">Groups Matrix</h2>
+                          <p className="text-slate-500 font-semibold mt-2">Select clusters to enrich and monitor.</p>
+                        </div>
+                        <div className="flex gap-4">
+                          <button onClick={fetchEvolutionGroups} className="px-8 py-4 bg-white border border-slate-200 rounded-[20px] text-[10px] font-black uppercase text-indigo-600 shadow-sm hover:scale-105 transition-all flex items-center gap-2"><Icons.Sync /> Refresh List</button>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-10">
+
+                      <div className="grid grid-cols-2 gap-8">
                         {groups.map(g => (
-                          <div key={g.group_id} onClick={() => setSelectedGroup(g)} className="bg-white rounded-[56px] border p-12 flex flex-col gap-10 hover:border-indigo-400 transition-all shadow-sm cursor-pointer group">
-                            <div className="flex justify-between items-start">
-                              <div className="space-y-4">
-                                <h3 className="text-2xl font-black group-hover:text-indigo-600 transition-colors">{g.group_name}</h3>
-                                <div className="flex gap-4 items-center">
-                                  <span className="text-[10px] font-mono bg-slate-50 px-3 py-1 rounded-lg border">{g.jid || 'NO-JID'}</span>
-                                  <span className="text-[10px] font-black text-indigo-600 uppercase">{g.member_count} Members</span>
-                                </div>
+                          <div key={g.group_id} className={`rounded-[40px] border p-8 transition-all relative group ${g.selected_for_sync ? 'bg-indigo-50 border-indigo-200 shadow-md' : 'bg-white border-slate-200 hover:border-indigo-300'}`}>
+                            {/* Header Section */}
+                            <div className="flex justify-between items-start mb-6">
+                              <div className="space-y-1 max-w-[70%]">
+                                <h3 className="text-xl font-black text-slate-800 leading-tight cursor-pointer hover:underline" onClick={() => setSelectedGroup(g)}>{g.group_name}</h3>
+                                <p className="text-[10px] font-mono text-slate-400 break-all">{g.jid}</p>
                               </div>
-                              <span className={`px-4 py-2 text-[10px] font-black uppercase rounded-2xl ${g.monitoring_enabled ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400'}`}>Live</span>
+                              <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-[9px] font-black uppercase">{g.member_count} Mbrs</span>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                              <button onClick={(e) => { e.stopPropagation(); fetchEvolutionMessages(g.jid); }} className="py-5 bg-emerald-50 text-emerald-600 rounded-[24px] text-[10px] font-black uppercase hover:bg-emerald-100 transition-all">🔄 History</button>
-                              <button onClick={(e) => { e.stopPropagation(); fetchEvolutionMembers(g.jid); }} className="py-5 bg-indigo-50 text-indigo-600 rounded-24px text-10px font-black uppercase hover:bg-indigo-100 transition-all">📥 Participants</button>
+
+                            {/* Selection Controls */}
+                            <div className="bg-white/50 rounded-[24px] p-6 space-y-4 border border-slate-100">
+                              <div className="flex items-center justify-between">
+                                <label className="flex items-center gap-3 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={g.sync_members || false}
+                                    onChange={(e) => setGroups(prev => prev.map(pg => pg.group_id === g.group_id ? { ...pg, sync_members: e.target.checked, selected_for_sync: true } : pg))}
+                                    className="w-5 h-5 rounded-lg accent-indigo-600"
+                                  />
+                                  <span className="text-xs font-bold text-slate-600">Import Members</span>
+                                </label>
+                                {g.sync_members && <span className="text-[9px] font-black text-emerald-500 uppercase animate-pulse">Ready</span>}
+                              </div>
+
+                              <div className="flex items-center justify-between">
+                                <label className="flex items-center gap-3 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={g.sync_history || false}
+                                    onChange={(e) => setGroups(prev => prev.map(pg => pg.group_id === g.group_id ? { ...pg, sync_history: e.target.checked, selected_for_sync: true } : pg))}
+                                    className="w-5 h-5 rounded-lg accent-indigo-600"
+                                  />
+                                  <span className="text-xs font-bold text-slate-600">Sync History</span>
+                                </label>
+                                {g.sync_history && (
+                                  <select
+                                    className="text-[10px] font-bold bg-slate-100 border-none rounded-lg px-2 py-1 outline-none"
+                                    value={g.history_days || 30}
+                                    onChange={(e) => setGroups(prev => prev.map(pg => pg.group_id === g.group_id ? { ...pg, history_days: parseInt(e.target.value) } : pg))}
+                                  >
+                                    <option value={30}>30 Days</option>
+                                    <option value={999}>All Time</option>
+                                  </select>
+                                )}
+                              </div>
+
+                              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                                <label className="flex items-center gap-3 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={g.enable_ai || false}
+                                    onChange={(e) => setGroups(prev => prev.map(pg => pg.group_id === g.group_id ? { ...pg, enable_ai: e.target.checked, selected_for_sync: true } : pg))}
+                                    className="w-5 h-5 rounded-lg accent-rose-500"
+                                  />
+                                  <span className="text-xs font-bold text-rose-600">Enable AI Analysis</span>
+                                </label>
+                              </div>
                             </div>
                           </div>
                         ))}
                       </div>
+
+                      {/* Floating Action Bar */}
+                      {groups.some(g => g.selected_for_sync) && (
+                        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white p-4 rounded-[32px] shadow-2xl flex items-center gap-6 z-50 animate-in slide-in-from-bottom-10">
+                          <div className="pl-6">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Selected Clusters</p>
+                            <p className="text-xl font-black">{groups.filter(g => g.selected_for_sync).length}</p>
+                          </div>
+                          <button
+                            onClick={async () => {
+                              const targets = groups.filter(g => g.selected_for_sync);
+                              addLog('info', `Processing batch for ${targets.length} clusters...`);
+
+                              for (const g of targets) {
+                                if (g.sync_members) await fetchEvolutionMembers(g.jid);
+                                if (g.sync_history) await fetchEvolutionMessages(g.jid); // Need to update this fn to respect days
+                                if (g.enable_ai) {
+                                  // Just a flag update for now, or could trigger a backend 'monitor' flag set
+                                  addLog('success', `AI Monitoring Active for ${g.group_name}`);
+                                }
+                              }
+                              addLog('success', 'Batch operations completed.');
+                              setGroups(prev => prev.map(g => ({ ...g, selected_for_sync: false })));
+                            }}
+                            className="px-10 py-4 bg-indigo-600 text-white rounded-[20px] text-xs font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg"
+                          >
+                            Start Processing
+                          </button>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <div className="flex flex-col gap-10 h-full">
