@@ -556,6 +556,22 @@ DRAFTING_STYLE: ${config.draftStyle}
                   {nav.badge ? <span className="px-2 py-0.5 bg-rose-500 text-white text-[10px] rounded-full">{nav.badge}</span> : null}
                 </button>
               ))}
+
+              <div className="pt-4 mt-4 border-t border-slate-100">
+                <button
+                  onClick={() => {
+                    if (confirm('Disconnect from Neural Core?')) {
+                      localStorage.removeItem('nexus_auth');
+                      localStorage.removeItem('nexus_config');
+                      window.location.reload();
+                    }
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-rose-500 hover:bg-rose-50 transition-all"
+                >
+                  <div className="w-5 h-5 flex items-center justify-center"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg></div>
+                  <span>TERMINATE SESSION</span>
+                </button>
+              </div>
             </nav>
           </aside>
 
