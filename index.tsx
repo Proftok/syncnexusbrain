@@ -38,11 +38,12 @@ const MOCK_DATA: Record<string, any> = {
 // --- Config Initializers ---
 const getInitialBaseUrl = () => {
   // Always prefer the Environment Variable injected by Coolify/Vite
-  const envUrl = (import.meta as any).env?.VITE_API_BASE_URL;
-  if (envUrl && envUrl.includes('http')) return envUrl;
-
-  // Fallback to window injection or localhost (only for local dev)
-  return (window as any).VITE_API_BASE_URL || 'http://localhost:3001';
+  let envUrl = (import.meta as any).env?.VITE_API_BASE_URL;
+  if (!envUrl || !envUrl.includes('http')) {
+    envUrl = (window as any).VITE_API_BASE_URL || 'http://localhost:3001';
+  }
+  // Remove trailing slash if present to avoid double slashes
+  return envUrl.endsWith('/') ? envUrl.slice(0, -1) : envUrl;
 };
 
 const getInitialConfig = () => {
@@ -183,16 +184,21 @@ const App = () => {
   };
 
   async function apiCall(endpoint: string, options?: RequestInit) {
+    // Ensure endpoint starts with slash for consistency
+    const safeEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const url = `${baseUrl}${safeEndpoint}`;
+
     try {
-      const response = await fetch(`${baseUrl}${endpoint}`, {
+      const response = await fetch(url, {
         ...options,
         headers: { 'Content-Type': 'application/json', ...options?.headers }
       });
-      if (!response.ok) throw new Error(`API Error: ${response.status}`);
+      if (!response.ok) throw new Error(`API Error: ${response.status} ${response.statusText}`);
       setIsSimulationMode(false);
       return response.json();
     } catch (err: any) {
-      console.warn(`Fetch failure for ${endpoint}: ${err.message}.`);
+      console.warn(`Fetch failure for ${url}: ${err.message}.`);
+      addLog('error', `Connection Failed: ${err.message}`); // Show in UI Log
       setIsSimulationMode(true);
       const mockKey = Object.keys(MOCK_DATA).find(key => endpoint.includes(key.split('?')[0]));
       if (mockKey) return MOCK_DATA[mockKey];
