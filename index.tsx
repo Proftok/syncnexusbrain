@@ -52,7 +52,7 @@ const getInitialConfig = () => {
   return {
     evolutionApiUrl: process.env.EVOLUTION_API_URL || '',
     evolutionApiKey: process.env.EVOLUTION_API_KEY || '',
-    instanceName: process.env.INSTANCE_NAME || 'Unified',
+    instanceName: process.env.INSTANCE_NAME || 'sa-personal',
     instanceName2: process.env.INSTANCE_NAME_2 || '',
     myWhatsAppId: '',
     aiProvider: 'openai',
