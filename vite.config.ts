@@ -13,7 +13,13 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'process.env.OPENAI_API_KEY': JSON.stringify(env.OPENAI_API_KEY)
+      'process.env.OPENAI_API_KEY': JSON.stringify(env.OPENAI_API_KEY),
+      'process.env.EVOLUTION_API_URL': JSON.stringify(env.EVOLUTION_API_URL),
+      'process.env.EVOLUTION_API_KEY': JSON.stringify(env.EVOLUTION_API_KEY),
+      'process.env.INSTANCE_NAME': JSON.stringify(env.INSTANCE_NAME),
+      'process.env.INSTANCE_NAME_2': JSON.stringify(env.INSTANCE_NAME_2),
+      'process.env.ACCESS_EMAIL': JSON.stringify(env.ACCESS_EMAIL),
+      'process.env.ACCESS_PASSWORD': JSON.stringify(env.ACCESS_PASSWORD)
     },
     resolve: {
       alias: {
