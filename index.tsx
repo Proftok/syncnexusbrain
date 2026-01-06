@@ -782,18 +782,33 @@ DRAFTING_STYLE: ${config.draftStyle}
 
                       <div className="grid grid-cols-2 gap-8">
                         {groups.map(g => (
-                          <div key={g.group_id} className={`rounded-[40px] border p-8 transition-all relative group ${g.selected_for_sync ? 'bg-indigo-50 border-indigo-200 shadow-md' : 'bg-white border-slate-200 hover:border-indigo-300'}`}>
+                          <div
+                            key={g.group_id}
+                            onClick={(e) => {
+                              // Prevent click if clicking inner controls
+                              if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'LABEL') return;
+                              setSelectedGroup(g);
+                            }}
+                            className={`rounded-[40px] border p-8 transition-all relative group cursor-pointer hover:shadow-xl hover:-translate-y-1 ${g.selected_for_sync ? 'bg-indigo-50 border-indigo-200 shadow-md' : 'bg-white border-slate-200 hover:border-indigo-300'}`}
+                          >
                             {/* Header Section */}
                             <div className="flex justify-between items-start mb-6">
                               <div className="space-y-1 max-w-[70%]">
-                                <h3 className="text-xl font-black text-slate-800 leading-tight cursor-pointer hover:underline" onClick={() => setSelectedGroup(g)}>{g.group_name}</h3>
+                                <h3 className="text-xl font-black text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors">
+                                  {g.jid === '120363247777014034@g.us' ? 'CEO Coffee Club' : g.group_name}
+                                </h3>
                                 <p className="text-[10px] font-mono text-slate-400 break-all">{g.jid}</p>
                               </div>
-                              <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-[9px] font-black uppercase">{g.member_count} Mbrs</span>
+                              <div className="flex flex-col items-end gap-2">
+                                <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-[9px] font-black uppercase">{g.member_count} Mbrs</span>
+                                <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 shadow-sm opacity-0 group-hover:opacity-100 transition-all">
+                                  Open View
+                                </button>
+                              </div>
                             </div>
 
                             {/* Selection Controls */}
-                            <div className="bg-white/50 rounded-[24px] p-6 space-y-4 border border-slate-100">
+                            <div className="bg-white/50 rounded-[24px] p-6 space-y-4 border border-slate-100" onClick={(e) => e.stopPropagation()}>
                               <div className="flex items-center justify-between">
                                 <label className="flex items-center gap-3 cursor-pointer">
                                   <input
