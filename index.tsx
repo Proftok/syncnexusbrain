@@ -1005,20 +1005,19 @@ DRAFTING_STYLE: ${config.draftStyle}
                         </div>
                         <div className="mt-4 pt-4 border-t border-slate-200">
                           <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Advanced Operations</p>
-                          <button 
-                             onClick={async () => {
-                               if(!confirm("This will fetch participants for ALL groups. It may take 5-10 minutes. Continue?")) return;
-                               addLog('info', 'Initiating Mass Protocol...');
-                               try {
-                                 await apiCall('/api/sync/full-sync', 'POST', { instanceName: config.instanceName });
-                                 addLog('success', 'Mass Sync In Progress (Background)');
-                               } catch(e: any) { addLog('error', e.message); }
-                             }}
-                             className="w-full py-4 bg-slate-900 text-white rounded-[16px] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-800 transition-all">
-                             <Icons.Sync /> Execute Mass Sync (All Groups)
+                          <button
+                            onClick={async () => {
+                              if (!confirm("This will fetch participants for ALL groups. It may take 5-10 minutes. Continue?")) return;
+                              addLog('info', 'Initiating Mass Protocol...');
+                              try {
+                                await apiCall('/api/sync/full-sync', 'POST', { instanceName: config.instanceName });
+                                addLog('success', 'Mass Sync In Progress (Background)');
+                              } catch (e: any) { addLog('error', e.message); }
+                            }}
+                            className="w-full py-4 bg-slate-900 text-white rounded-[16px] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-800 transition-all">
+                            <Icons.Sync /> Execute Mass Sync (All Groups)
                           </button>
                         </div>
-                      </div>
                       </div>
                     </section>
                     <section className="bg-white rounded-[48px] border p-12 space-y-8 shadow-sm">
@@ -1033,81 +1032,81 @@ DRAFTING_STYLE: ${config.draftStyle}
                     </section>
                     <button onClick={() => { localStorage.setItem('nexus_config', JSON.stringify(config)); addLog('success', 'Config updated.'); }} className="w-full py-8 bg-indigo-600 text-white rounded-[32px] text-xs font-black uppercase tracking-[0.4em] shadow-2xl hover:scale-[1.02] transition-all">💾 COMMIT INFRASTRUCTURE</button>
                   </div>
-        </div>
-      )}
-
-      {/* TAB: CORE SHELL */}
-      {activeTab === 'command' && (
-        <div className="h-full flex flex-col space-y-10 animate-in fade-in">
-          <h2 className="text-4xl font-black tracking-tight italic">Nexus Core Shell</h2>
-          <div className="flex-1 bg-slate-950 rounded-[48px] border border-slate-800 shadow-2xl flex flex-col p-2 overflow-hidden">
-            <div className="p-8 border-b border-slate-800 flex justify-between items-center">
-              <div className="flex gap-2"><div className="w-3 h-3 rounded-full bg-rose-500" /><div className="w-3 h-3 rounded-full bg-amber-500" /><div className="w-3 h-3 rounded-full bg-emerald-500" /></div>
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => {
-                    localStorage.removeItem('nexus_auth');
-                    localStorage.removeItem('nexus_config');
-                    window.location.reload();
-                  }}
-                  className="px-4 py-2 bg-rose-900/30 text-rose-400 border border-rose-900/50 rounded-lg text-[10px] font-black uppercase hover:bg-rose-900/50 transition-colors"
-                >
-                  Logout / Reset
-                </button>
-                <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">HYBRID-MATRIX-{config.aiProvider}</span>
-              </div>
-            </div>
-            <div className="flex-1 overflow-y-auto p-10 font-mono text-[11px] space-y-6">
-              {logs.map(log => (
-                <div key={log.id} className="flex gap-6">
-                  <span className="text-slate-600">[{new Date(log.id).toLocaleTimeString()}]</span>
-                  <span className={`uppercase font-black ${log.type === 'error' ? 'text-rose-400' : log.type === 'ai' ? 'text-indigo-400' : 'text-emerald-400'}`}>{log.type}:</span>
-                  <span className="text-slate-300">{log.text}</span>
                 </div>
-              ))}
-              <div className="flex gap-6"><span className="text-slate-600">[{new Date().toLocaleTimeString()}]</span><span className="text-indigo-400 uppercase font-black">SYSTEM:</span><span className="text-slate-300 animate-pulse">Monitoring signals...</span></div>
-            </div>
-          </div>
-        </div>
-      )}
+              )}
 
-      {/* AI INBOX */}
-      {activeTab === 'inbox' && (
-        <div className="space-y-10 max-w-5xl mx-auto animate-in fade-in pb-20">
-          <h2 className="text-4xl font-black tracking-tight italic">Triage Center</h2>
-          {aiQueue.length === 0 ? <div className="p-40 text-center opacity-30 italic font-black text-2xl">SCANNING MATRIX...</div> : aiQueue.map(msg => (
-            <div key={msg.id} className="bg-white rounded-[40px] border p-12 shadow-sm border-l-8 border-l-indigo-600 space-y-8">
-              <div className="flex justify-between items-start">
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-black cursor-pointer hover:text-indigo-600" onClick={() => goToContact(msg.sender_id)}>{msg.sender_name}</h3>
-                  <p className="text-xs text-slate-400 font-bold uppercase">{msg.group_name || 'Signal Matrix'}</p>
-                </div>
-                <span className="px-5 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-black uppercase tracking-widest shadow-sm">Value: {msg.value_score}</span>
-              </div>
-              <p className="text-xl font-medium text-slate-600 italic border-l-4 border-indigo-200 pl-6 bg-slate-50/50 py-4 rounded-r-xl">"{msg.message_body}"</p>
-              <div className="p-8 bg-slate-50 rounded-[32px] border border-slate-100">
-                <p className="text-[10px] font-black text-indigo-400 uppercase mb-4">Neural Reasoning</p>
-                <p className="text-xs font-bold text-slate-700 leading-relaxed mb-8">{msg.reasoning}</p>
-                <div className="grid grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">📱 Group Draft</label></div>
-                    <textarea className="w-full h-32 bg-slate-900 text-emerald-400 p-6 rounded-[24px] font-mono text-xs outline-none border-2 border-slate-800" defaultValue={msg.group_draft} />
-                    <button onClick={async () => await sendEvolutionWhatsApp(msg.group_jid || msg.sender_id, msg.group_draft)} className="w-full py-4 bg-blue-600 text-white rounded-[20px] text-[10px] font-black uppercase tracking-[0.2em] shadow-lg hover:scale-[1.02] transition-all">🚀 Deploy Group</button>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">👤 Personal DM</label></div>
-                    <textarea className="w-full h-32 bg-slate-900 text-purple-300 p-6 rounded-[24px] font-mono text-xs outline-none border-2 border-slate-800" defaultValue={msg.dm_draft} />
-                    <button onClick={async () => { if (await sendEvolutionWhatsApp(msg.sender_id, msg.dm_draft)) setAiQueue(prev => prev.filter(q => q.id !== msg.id)); }} className="w-full py-4 bg-indigo-600 text-white rounded-[20px] text-[10px] font-black uppercase tracking-[0.2em] shadow-lg hover:scale-[1.02] transition-all">🚀 Deploy Private DM</button>
+              {/* TAB: CORE SHELL */}
+              {activeTab === 'command' && (
+                <div className="h-full flex flex-col space-y-10 animate-in fade-in">
+                  <h2 className="text-4xl font-black tracking-tight italic">Nexus Core Shell</h2>
+                  <div className="flex-1 bg-slate-950 rounded-[48px] border border-slate-800 shadow-2xl flex flex-col p-2 overflow-hidden">
+                    <div className="p-8 border-b border-slate-800 flex justify-between items-center">
+                      <div className="flex gap-2"><div className="w-3 h-3 rounded-full bg-rose-500" /><div className="w-3 h-3 rounded-full bg-amber-500" /><div className="w-3 h-3 rounded-full bg-emerald-500" /></div>
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={() => {
+                            localStorage.removeItem('nexus_auth');
+                            localStorage.removeItem('nexus_config');
+                            window.location.reload();
+                          }}
+                          className="px-4 py-2 bg-rose-900/30 text-rose-400 border border-rose-900/50 rounded-lg text-[10px] font-black uppercase hover:bg-rose-900/50 transition-colors"
+                        >
+                          Logout / Reset
+                        </button>
+                        <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">HYBRID-MATRIX-{config.aiProvider}</span>
+                      </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-10 font-mono text-[11px] space-y-6">
+                      {logs.map(log => (
+                        <div key={log.id} className="flex gap-6">
+                          <span className="text-slate-600">[{new Date(log.id).toLocaleTimeString()}]</span>
+                          <span className={`uppercase font-black ${log.type === 'error' ? 'text-rose-400' : log.type === 'ai' ? 'text-indigo-400' : 'text-emerald-400'}`}>{log.type}:</span>
+                          <span className="text-slate-300">{log.text}</span>
+                        </div>
+                      ))}
+                      <div className="flex gap-6"><span className="text-slate-600">[{new Date().toLocaleTimeString()}]</span><span className="text-indigo-400 uppercase font-black">SYSTEM:</span><span className="text-slate-300 animate-pulse">Monitoring signals...</span></div>
+                    </div>
                   </div>
                 </div>
-                <div className="mt-8 flex justify-center"><button onClick={() => setAiQueue(prev => prev.filter(q => q.id !== msg.id))} className="px-8 py-3 text-slate-400 hover:text-rose-500 text-[10px] font-black uppercase tracking-widest transition-all">Archive Signal</button></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+              )}
 
-    </div >
+              {/* AI INBOX */}
+              {activeTab === 'inbox' && (
+                <div className="space-y-10 max-w-5xl mx-auto animate-in fade-in pb-20">
+                  <h2 className="text-4xl font-black tracking-tight italic">Triage Center</h2>
+                  {aiQueue.length === 0 ? <div className="p-40 text-center opacity-30 italic font-black text-2xl">SCANNING MATRIX...</div> : aiQueue.map(msg => (
+                    <div key={msg.id} className="bg-white rounded-[40px] border p-12 shadow-sm border-l-8 border-l-indigo-600 space-y-8">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-2">
+                          <h3 className="text-2xl font-black cursor-pointer hover:text-indigo-600" onClick={() => goToContact(msg.sender_id)}>{msg.sender_name}</h3>
+                          <p className="text-xs text-slate-400 font-bold uppercase">{msg.group_name || 'Signal Matrix'}</p>
+                        </div>
+                        <span className="px-5 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-black uppercase tracking-widest shadow-sm">Value: {msg.value_score}</span>
+                      </div>
+                      <p className="text-xl font-medium text-slate-600 italic border-l-4 border-indigo-200 pl-6 bg-slate-50/50 py-4 rounded-r-xl">"{msg.message_body}"</p>
+                      <div className="p-8 bg-slate-50 rounded-[32px] border border-slate-100">
+                        <p className="text-[10px] font-black text-indigo-400 uppercase mb-4">Neural Reasoning</p>
+                        <p className="text-xs font-bold text-slate-700 leading-relaxed mb-8">{msg.reasoning}</p>
+                        <div className="grid grid-cols-2 gap-8">
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">📱 Group Draft</label></div>
+                            <textarea className="w-full h-32 bg-slate-900 text-emerald-400 p-6 rounded-[24px] font-mono text-xs outline-none border-2 border-slate-800" defaultValue={msg.group_draft} />
+                            <button onClick={async () => await sendEvolutionWhatsApp(msg.group_jid || msg.sender_id, msg.group_draft)} className="w-full py-4 bg-blue-600 text-white rounded-[20px] text-[10px] font-black uppercase tracking-[0.2em] shadow-lg hover:scale-[1.02] transition-all">🚀 Deploy Group</button>
+                          </div>
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">👤 Personal DM</label></div>
+                            <textarea className="w-full h-32 bg-slate-900 text-purple-300 p-6 rounded-[24px] font-mono text-xs outline-none border-2 border-slate-800" defaultValue={msg.dm_draft} />
+                            <button onClick={async () => { if (await sendEvolutionWhatsApp(msg.sender_id, msg.dm_draft)) setAiQueue(prev => prev.filter(q => q.id !== msg.id)); }} className="w-full py-4 bg-indigo-600 text-white rounded-[20px] text-[10px] font-black uppercase tracking-[0.2em] shadow-lg hover:scale-[1.02] transition-all">🚀 Deploy Private DM</button>
+                          </div>
+                        </div>
+                        <div className="mt-8 flex justify-center"><button onClick={() => setAiQueue(prev => prev.filter(q => q.id !== msg.id))} className="px-8 py-3 text-slate-400 hover:text-rose-500 text-[10px] font-black uppercase tracking-widest transition-all">Archive Signal</button></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+            </div >
           </main >
         </div >
       )}
