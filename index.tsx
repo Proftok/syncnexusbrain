@@ -199,13 +199,19 @@ const App = () => {
         ...options,
         headers: { 'Content-Type': 'application/json', ...options?.headers }
       });
+      if (response.status === 404) {
+        console.warn(`⚠️ 404 Not Found: ${url}`);
+        return [];
+      }
       if (!response.ok) throw new Error(`API Error: ${response.status} ${response.statusText}`);
       setIsSimulationMode(false);
       return response.json();
     } catch (err: any) {
       console.warn(`Fetch failure for ${url}: ${err.message}.`);
-      addLog('error', `Connection Failed: ${err.message}`); // Show in UI Log
-      setIsSimulationMode(true);
+      if (!err.message.includes('404')) {
+        addLog('error', `Connection Failed: ${err.message}`);
+        setIsSimulationMode(true);
+      }
       const mockKey = Object.keys(MOCK_DATA).find(key => endpoint.includes(key.split('?')[0]));
       if (mockKey) return MOCK_DATA[mockKey];
       throw err;
