@@ -365,8 +365,8 @@ DRAFTING_STYLE: ${config.draftStyle}
     for (const instance of instancesToSync) {
       if (!instance) continue;
       try {
-        const url = `${config.evolutionApiUrl}/group/fetchAllGroups/${instance}?getParticipants=true`;
-        addLog('info', `Fetching: ${url}`); // Debug Log
+        const url = `${config.evolutionApiUrl}/group/fetchAllGroups/${instance}`;
+        addLog('info', `Fetching (Light): ${url}`); // Debug Log
 
         const response = await fetch(url, { headers: { 'apikey': config.evolutionApiKey } });
         const data = await response.json();
