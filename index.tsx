@@ -386,8 +386,8 @@ DRAFTING_STYLE: ${config.draftStyle}
       if (Array.isArray(members)) {
         const newContacts = members.map((p: any) => ({
           member_id: p.memberId,
-          display_name: p.displayName || p.phoneNumber,
-          phone_number: p.phoneNumber,
+          display_name: p.displayName || p.phoneNumber || 'Unknown Member',
+          phone_number: p.phoneNumber || '',
           instance_id: 1,
           is_eo_member: false,
           monitoring_enabled: true,
@@ -593,7 +593,12 @@ DRAFTING_STYLE: ${config.draftStyle}
                       { label: 'High Value Hits', value: aiQueue.length, icon: Icons.Inbox, color: 'rose' },
                       { label: 'Threshold', value: config.threshold, icon: Icons.Brain, color: 'amber' }
                     ].map((stat, i) => (
-                      <div key={i} className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm flex flex-col justify-between hover:scale-105 transition-all">
+                      <div key={i} onClick={() => {
+                        if (stat.label === 'Total Groups') setActiveTab('groups');
+                        if (stat.label === 'Identities') setActiveTab('contacts');
+                        if (stat.label === 'High Value Hits') setActiveTab('inbox');
+                        if (stat.label === 'Threshold') setActiveTab('brain');
+                      }} className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm flex flex-col justify-between hover:scale-105 transition-all cursor-pointer">
                         <div className="flex items-center justify-between mb-4">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-${stat.color}-50 text-${stat.color}-600`}><stat.icon /></div>
@@ -969,7 +974,7 @@ DRAFTING_STYLE: ${config.draftStyle}
                           <div className="space-y-4">
                             {contacts.filter(c => c.group_ids?.includes(selectedGroup.jid) || c.group_ids?.includes(selectedGroup.group_id)).length > 0 ? contacts.filter(c => c.group_ids?.includes(selectedGroup.jid) || c.group_ids?.includes(selectedGroup.group_id)).map(c => (
                               <div key={c.member_id} onClick={() => goToContact(c.member_id)} className="p-5 bg-white border border-slate-100 rounded-3xl flex items-center gap-4 cursor-pointer hover:border-indigo-400 hover:shadow-sm transition-all">
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-sm ${c.enrichment ? 'bg-indigo-600' : 'bg-slate-800'}`}>{c.display_name.charAt(0)}</div>
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-sm ${c.enrichment ? 'bg-indigo-600' : 'bg-slate-800'}`}>{(c.display_name || '?').charAt(0)}</div>
                                 <div className="flex-1 truncate">
                                   <p className="text-sm font-black truncate">{c.display_name}</p>
                                   <p className="text-[9px] text-slate-400 font-bold uppercase">{c.phone_number}</p>
