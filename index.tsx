@@ -378,48 +378,52 @@ DRAFTING_STYLE: ${config.draftStyle}
   }
 
   async function fetchEvolutionMembers(groupJid: string) {
-    if (!config.evolutionApiUrl || !config.evolutionApiKey) return;
-    addLog('info', `Importing participants...`);
-
-    // We try both instances to find where the group exists, or default to primary
-    // In reality, we should know which instance the group belongs to.
-    // For simplicity, we trigger the fetch on the primary likely instance, or try both.
-
-    const targetInstance = config.instanceName2 && selectedInstance === 2 ? config.instanceName2 : config.instanceName;
-
+    addLog('info', `Loading participants from DB for ${groupJid}...`);
     try {
-      const response = await fetch(`${config.evolutionApiUrl}/group/participants/${targetInstance}?groupJid=${groupJid}`, { headers: { 'apikey': config.evolutionApiKey } });
-      const participants = await response.json();
+      // Use the new backend endpoint
+      const members = await apiCall(`/api/groups/${groupJid}/members`, 'GET');
 
-      if (!Array.isArray(participants)) {
-        addLog('error', `Import failed: ${participants?.message || participants?.data?.message || JSON.stringify(participants)}`);
-        return;
+      if (Array.isArray(members)) {
+        const newContacts = members.map((p: any) => ({
+          member_id: p.memberId,
+          display_name: p.displayName || p.phoneNumber,
+          phone_number: p.phoneNumber,
+          instance_id: 1,
+          is_eo_member: false,
+          monitoring_enabled: true,
+          enrichment: p.jobTitle ? { title: p.jobTitle, company: p.companyName } : null,
+          research_log: [],
+          group_ids: [groupJid],
+          is_direct: false
+        }));
+
+        setContacts(prev => {
+          // Merge logic to avoid duplicates
+          const existingIds = new Set(prev.map(c => c.member_id));
+          const uniqueNew = newContacts.filter((c: any) => !existingIds.has(c.member_id));
+          return [...prev, ...uniqueNew];
+        });
+        addLog('success', `Loaded ${members.length} participants from DB.`);
+      } else {
+        addLog('error', 'No participants found in DB.');
       }
-
-      const newContacts = participants.map((p: any) => ({
-        member_id: p.id, display_name: p.pushName || p.notify || p.id.split('@')[0], phone_number: p.id.replace('@s.whatsapp.net', '').replace('@c.us', ''), instance_id: parseInt(config.instanceName.includes('UAE') ? '2' : '1'), is_eo_member: false, monitoring_enabled: true, enrichment: null, research_log: [], group_ids: [groupJid], is_direct: false
-      }));
-      setContacts(prev => {
-        const existingIds = new Set(prev.map(c => c.member_id));
-        const uniqueNew = newContacts.filter((c: any) => !existingIds.has(c.member_id));
-        if (uniqueNew.length > 0) triggerAutoEnrichment(uniqueNew);
-        return [...prev, ...uniqueNew];
-      });
-      addLog('success', `Imported ${newContacts.length} contacts.`);
-    } catch (err: any) { addLog('error', `Member error: ${err.message}`); }
+    } catch (err: any) { addLog('error', `Member DB Error: ${err.message}`); }
   }
 
   async function fetchEvolutionMessages(groupJid: string) {
-    if (!config.evolutionApiUrl || !config.evolutionApiKey) return;
-    addLog('info', `Restoring intelligence for ${groupJid}...`);
+    addLog('info', `Loading history from DB for ${groupJid}...`);
     try {
-      const response = await fetch(`${config.evolutionApiUrl}/chat/findMessages/${config.instanceName}?where[key.remoteJid]=${groupJid}&limit=20`, { headers: { 'apikey': config.evolutionApiKey } });
-      const rawMsgs = await response.json();
-      const transformed = rawMsgs.map((m: any) => ({ id: m.key.id, group_id: groupJid, sender_id: m.key.participant || m.key.remoteJid, sender_name: m.pushName || 'Unknown', body: m.message?.conversation || m.message?.extendedTextMessage?.text || '', timestamp: m.messageTimestamp, is_from_me: m.key.fromMe })).filter((m: any) => m.body);
-      setMessages(prev => [...transformed, ...prev]);
-      addLog('success', `Restored ${transformed.length} logs.`);
-      if (transformed.length > 0) analyzeMessage(transformed[0]);
-    } catch (err: any) { addLog('error', `History error: ${err.message}`); }
+      const msgs = await apiCall(`/api/groups/${groupJid}/messages`, 'GET');
+      if (Array.isArray(msgs)) {
+        setMessages(prev => {
+          // Basic dedupe
+          const existingIds = new Set(prev.map(m => m.id));
+          const uniqueNew = msgs.filter((m: any) => !existingIds.has(m.id));
+          return [...prev, ...uniqueNew];
+        });
+        addLog('success', `Loaded ${msgs.length} messages from DB.`);
+      }
+    } catch (err: any) { addLog('error', `History DB Error: ${err.message}`); }
   }
 
   async function sendEvolutionWhatsApp(jid: string, text: string): Promise<boolean> {
