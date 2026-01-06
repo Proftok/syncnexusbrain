@@ -351,63 +351,30 @@ DRAFTING_STYLE: ${config.draftStyle}
     } catch (err: any) { addLog('error', `Analysis failed: ${err.message}`); } finally { setIsProcessing(false); }
   }
 
-  // --- Evolution API ---
+  // --- Backend-First Sync ---
   async function fetchEvolutionGroups() {
-    if (!config.evolutionApiUrl || !config.evolutionApiKey) return addLog('error', 'Evolution API missing');
-    addLog('info', `Syncing Evolution Matrix...`);
-
-    const instancesToSync = [];
-    if (selectedInstance === 'all' || selectedInstance === 1) instancesToSync.push(config.instanceName);
-    if ((selectedInstance === 'all' || selectedInstance === 2) && config.instanceName2) instancesToSync.push(config.instanceName2);
-
-    let allGroups: any[] = [];
-
-    for (const instance of instancesToSync) {
-      if (!instance) continue;
-      try {
-        const url = `${config.evolutionApiUrl}/group/fetchAllGroups/${instance}`;
-        addLog('info', `Fetching (Light): ${url}`); // Debug Log
-
-        const response = await fetch(url, { headers: { 'apikey': config.evolutionApiKey } });
-        const data = await response.json();
-
-        if (!Array.isArray(data)) {
-          // It might be an error object like { error: 'Instance not found' }
-          addLog('error', `Sync failed for ${instance}: ${data?.message || data?.error || JSON.stringify(data)}`);
-          console.error('API Error Payload:', data);
-          continue;
-        }
-
-        if (data.length > 0) {
-          addLog('info', `DEBUG: First Group Keys: ${Object.keys(data[0]).join(', ')}`);
-          // console.log('Sample Group Data:', data[0]); 
-        }
-
+    addLog('info', `Loading Groups from Local Database...`);
+    try {
+      const data = await apiCall('/api/groups', 'GET');
+      if (Array.isArray(data)) {
         const transformed = data.map((g: any) => ({
-          group_id: g.id,
-          // Try every conceivable name field
-          group_name: g.subject || g.name || g.title || g.desc || g.id.split('@')[0],
-          member_count: g.size || (g.participants ? g.participants.length : 0),
-          group_category: 'whatsapp',
-          monitoring_enabled: false,
-          jid: g.id,
-          instance_id: instance === config.instanceName ? 1 : 2
+          group_id: g.groupId,
+          group_name: g.groupName || g.jid.split('@')[0],
+          member_count: g.memberCount || 0,
+          group_category: g.groupCategory || 'whatsapp',
+          monitoring_enabled: g.monitoringEnabled || false,
+          jid: g.jid,
+          selected_for_sync: false,
+          instance_id: g.instanceId
         }));
-        allGroups = [...allGroups, ...transformed];
-      } catch (err: any) {
-        addLog('error', `Sync CRITICAL ERROR for ${instance}: ${err.message}`);
+        setGroups(transformed);
+        addLog('success', `Loaded ${transformed.length} groups from DB.`);
+      } else {
+        addLog('error', 'Failed to load groups: Invalid DB response');
       }
+    } catch (err: any) {
+      addLog('error', `DB Sync Error: ${err.message}`);
     }
-
-    if (allGroups.length === 0) {
-      addLog('error', `Matrix Empty. Check instance status & API Key.`);
-      return;
-    }
-
-    // Deduplicate by JID
-    const uniqueGroups = Array.from(new Map(allGroups.map(item => [item.jid, item])).values());
-    setGroups(uniqueGroups);
-    addLog('success', `Matrix Synced: ${uniqueGroups.length} groups found.`);
   }
 
   async function fetchEvolutionMembers(groupJid: string) {
