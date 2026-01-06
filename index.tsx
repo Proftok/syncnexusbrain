@@ -920,175 +920,173 @@ DRAFTING_STYLE: ${config.draftStyle}
                     </>
                   ) : (
                     /* Group Detail View */
-                    selectedGroup && (
-                      <div className="bg-white rounded-[24px] border border-slate-200 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
-                        <div className="border-b border-slate-100 p-8 flex justify-between items-center bg-slate-50/50">
-                          <div>
-                            <button
-                              onClick={() => setSelectedGroup(null)}
-                              className="text-[10px] font-black tracking-widest text-indigo-600 mb-2 hover:underline uppercase"
-                            >
-                              ← Back to Clusters
-                            </button>
-                            <h2 className="text-3xl font-black text-slate-800 tracking-tight">
-                              {selectedGroup.jid === '120363247777014034@g.us' ? 'CEO Coffee Club' : selectedGroup.group_name}
-                            </h2>
-                            <p className="text-xs font-mono text-slate-400 mt-1">{selectedGroup.jid}</p>
-                          </div>
-                          <div className="flex gap-3">
-                            <button
-                              onClick={() => fetchEvolutionMessages(selectedGroup.jid)}
-                              className="px-6 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl text-[10px] font-black hover:bg-slate-50 transition-colors uppercase tracking-wider"
-                            >
-                              {isGlobalLoading ? 'Syncing...' : 'Sync History'}
-                            </button>
-                            <button
-                              onClick={() => fetchEvolutionMembers(selectedGroup.jid)}
-                              className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black hover:bg-indigo-700 transition-colors shadow-sm hover:shadow-indigo-200 uppercase tracking-wider"
-                            >
-                              {isGlobalLoading ? 'Loading...' : 'Sync Participants'}
-                            </button>
-                          </div>
+                    <div className="bg-white rounded-[24px] border border-slate-200 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
+                      <div className="border-b border-slate-100 p-8 flex justify-between items-center bg-slate-50/50">
+                        <div>
+                          <button
+                            onClick={() => setSelectedGroup(null)}
+                            className="text-[10px] font-black tracking-widest text-indigo-600 mb-2 hover:underline uppercase"
+                          >
+                            ← Back to Clusters
+                          </button>
+                          <h2 className="text-3xl font-black text-slate-800 tracking-tight">
+                            {selectedGroup.jid === '120363247777014034@g.us' ? 'CEO Coffee Club' : selectedGroup.group_name}
+                          </h2>
+                          <p className="text-xs font-mono text-slate-400 mt-1">{selectedGroup.jid}</p>
                         </div>
-                        <div className="flex-1 flex overflow-hidden">
-                          {/* Chat History Column */}
-                          <div className="flex-1 overflow-y-auto p-12 space-y-6 border-r">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Latest Intelligence</p>
-                            {messages.filter(m => m.group_id === selectedGroup.jid).length > 0 ? messages.filter(m => m.group_id === selectedGroup.jid).map(m => (
-                              <div key={m.id} className="p-6 bg-slate-50 rounded-[32px] rounded-bl-none border border-slate-100">
-                                <div className="flex justify-between items-start mb-2">
-                                  <p className="text-xs font-black text-indigo-600 cursor-pointer hover:underline" onClick={() => goToContact(m.sender_id)}>{m.sender_name}</p>
-                                  <p className="text-[9px] text-slate-300 font-bold uppercase">{new Date(m.timestamp * 1000).toLocaleTimeString()}</p>
-                                </div>
-                                <p className="text-sm font-medium">{m.body}</p>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => fetchEvolutionMessages(selectedGroup.jid)}
+                            className="px-6 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl text-[10px] font-black hover:bg-slate-50 transition-colors uppercase tracking-wider"
+                          >
+                            {isGlobalLoading ? 'Syncing...' : 'Sync History'}
+                          </button>
+                          <button
+                            onClick={() => fetchEvolutionMembers(selectedGroup.jid)}
+                            className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black hover:bg-indigo-700 transition-colors shadow-sm hover:shadow-indigo-200 uppercase tracking-wider"
+                          >
+                            {isGlobalLoading ? 'Loading...' : 'Sync Participants'}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex-1 flex overflow-hidden">
+                        {/* Chat History Column */}
+                        <div className="flex-1 overflow-y-auto p-12 space-y-6 border-r">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Latest Intelligence</p>
+                          {messages.filter(m => m.group_id === selectedGroup.jid).length > 0 ? messages.filter(m => m.group_id === selectedGroup.jid).map(m => (
+                            <div key={m.id} className="p-6 bg-slate-50 rounded-[32px] rounded-bl-none border border-slate-100">
+                              <div className="flex justify-between items-start mb-2">
+                                <p className="text-xs font-black text-indigo-600 cursor-pointer hover:underline" onClick={() => goToContact(m.sender_id)}>{m.sender_name}</p>
+                                <p className="text-[9px] text-slate-300 font-bold uppercase">{new Date(m.timestamp * 1000).toLocaleTimeString()}</p>
                               </div>
-                            )) : <p className="text-center py-20 text-xs text-slate-300 italic">No messages synced for this group yet.</p>}
-                          </div>
-                          {/* Participant Column */}
-                          <div className="w-[380px] overflow-y-auto p-10 bg-slate-50/10">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Participant Matrix</p>
-                            <div className="space-y-4">
-                              {contacts.filter(c => c.group_ids?.includes(selectedGroup.jid) || c.group_ids?.includes(selectedGroup.group_id)).length > 0 ? contacts.filter(c => c.group_ids?.includes(selectedGroup.jid) || c.group_ids?.includes(selectedGroup.group_id)).map(c => (
-                                <div key={c.member_id} onClick={() => goToContact(c.member_id)} className="p-5 bg-white border border-slate-100 rounded-3xl flex items-center gap-4 cursor-pointer hover:border-indigo-400 hover:shadow-sm transition-all">
-                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-sm ${c.enrichment ? 'bg-indigo-600' : 'bg-slate-800'}`}>{c.display_name.charAt(0)}</div>
-                                  <div className="flex-1 truncate">
-                                    <p className="text-sm font-black truncate">{c.display_name}</p>
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase">{c.phone_number}</p>
-                                  </div>
-                                </div>
-                              )) : <p className="text-[10px] text-slate-400 italic">Click "Sync Participants" to populate.</p>}
+                              <p className="text-sm font-medium">{m.body}</p>
                             </div>
+                          )) : <p className="text-center py-20 text-xs text-slate-300 italic">No messages synced for this group yet.</p>}
+                        </div>
+                        {/* Participant Column */}
+                        <div className="w-[380px] overflow-y-auto p-10 bg-slate-50/10">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Participant Matrix</p>
+                          <div className="space-y-4">
+                            {contacts.filter(c => c.group_ids?.includes(selectedGroup.jid) || c.group_ids?.includes(selectedGroup.group_id)).length > 0 ? contacts.filter(c => c.group_ids?.includes(selectedGroup.jid) || c.group_ids?.includes(selectedGroup.group_id)).map(c => (
+                              <div key={c.member_id} onClick={() => goToContact(c.member_id)} className="p-5 bg-white border border-slate-100 rounded-3xl flex items-center gap-4 cursor-pointer hover:border-indigo-400 hover:shadow-sm transition-all">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-sm ${c.enrichment ? 'bg-indigo-600' : 'bg-slate-800'}`}>{c.display_name.charAt(0)}</div>
+                                <div className="flex-1 truncate">
+                                  <p className="text-sm font-black truncate">{c.display_name}</p>
+                                  <p className="text-[9px] text-slate-400 font-bold uppercase">{c.phone_number}</p>
+                                </div>
+                              </div>
+                            )) : <p className="text-[10px] text-slate-400 italic">Click "Sync Participants" to populate.</p>}
                           </div>
                         </div>
                       </div>
                     </div>
+                  )}
+                </div>
               )}
+
+              {/* TAB: SETTINGS / INFRASTRUCTURE */}
+              {activeTab === 'settings' && (
+                <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in">
+                  <h2 className="text-4xl font-black tracking-tight italic">Infrastructure</h2>
+                  <div className="grid gap-10">
+                    <section className="bg-white rounded-[48px] border p-12 space-y-8 shadow-sm">
+                      <h3 className="text-2xl font-black flex items-center gap-3"><Icons.Sync /> Evolution Bridge</h3>
+                      <div className="p-6 bg-slate-50 rounded-[24px] border border-slate-100">
+                        <p className="text-xs font-black uppercase text-slate-400 tracking-widest mb-2">Active Connection</p>
+                        <p className="font-mono text-sm text-slate-600 break-all">{config.evolutionApiUrl || 'No API URL Configured'}</p>
+                        <div className="flex gap-4 mt-4">
+                          <span className="px-3 py-1 bg-indigo-100 text-indigo-600 rounded-lg text-[10px] font-black uppercase">Instance: {config.instanceName}</span>
+                          {config.instanceName2 && <span className="px-3 py-1 bg-emerald-100 text-emerald-600 rounded-lg text-[10px] font-black uppercase">Instance 2: {config.instanceName2}</span>}
+                        </div>
+                      </div>
+                    </section>
+                    <section className="bg-white rounded-[48px] border p-12 space-y-8 shadow-sm">
+                      <h3 className="text-2xl font-black flex items-center gap-3"><Icons.Brain /> AI Core</h3>
+                      <div className="flex items-center gap-4 p-6 bg-slate-50 rounded-[24px] border border-slate-100">
+                        <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center"><Icons.Sparkles /></div>
+                        <div>
+                          <p className="text-xs font-black uppercase text-slate-400 tracking-widest">Active Model</p>
+                          <p className="text-lg font-black text-slate-900">GPT-5 Mini (Next Gen)</p>
+                        </div>
+                      </div>
+                    </section>
+                    <button onClick={() => { localStorage.setItem('nexus_config', JSON.stringify(config)); addLog('success', 'Config updated.'); }} className="w-full py-8 bg-indigo-600 text-white rounded-[32px] text-xs font-black uppercase tracking-[0.4em] shadow-2xl hover:scale-[1.02] transition-all">💾 COMMIT INFRASTRUCTURE</button>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: CORE SHELL */}
+              {activeTab === 'command' && (
+                <div className="h-full flex flex-col space-y-10 animate-in fade-in">
+                  <h2 className="text-4xl font-black tracking-tight italic">Nexus Core Shell</h2>
+                  <div className="flex-1 bg-slate-950 rounded-[48px] border border-slate-800 shadow-2xl flex flex-col p-2 overflow-hidden">
+                    <div className="p-8 border-b border-slate-800 flex justify-between items-center">
+                      <div className="flex gap-2"><div className="w-3 h-3 rounded-full bg-rose-500" /><div className="w-3 h-3 rounded-full bg-amber-500" /><div className="w-3 h-3 rounded-full bg-emerald-500" /></div>
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={() => {
+                            localStorage.removeItem('nexus_auth');
+                            localStorage.removeItem('nexus_config');
+                            window.location.reload();
+                          }}
+                          className="px-4 py-2 bg-rose-900/30 text-rose-400 border border-rose-900/50 rounded-lg text-[10px] font-black uppercase hover:bg-rose-900/50 transition-colors"
+                        >
+                          Logout / Reset
+                        </button>
+                        <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">HYBRID-MATRIX-{config.aiProvider}</span>
+                      </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-10 font-mono text-[11px] space-y-6">
+                      {logs.map(log => (
+                        <div key={log.id} className="flex gap-6">
+                          <span className="text-slate-600">[{new Date(log.id).toLocaleTimeString()}]</span>
+                          <span className={`uppercase font-black ${log.type === 'error' ? 'text-rose-400' : log.type === 'ai' ? 'text-indigo-400' : 'text-emerald-400'}`}>{log.type}:</span>
+                          <span className="text-slate-300">{log.text}</span>
+                        </div>
+                      ))}
+                      <div className="flex gap-6"><span className="text-slate-600">[{new Date().toLocaleTimeString()}]</span><span className="text-indigo-400 uppercase font-black">SYSTEM:</span><span className="text-slate-300 animate-pulse">Monitoring signals...</span></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* AI INBOX */}
+              {activeTab === 'inbox' && (
+                <div className="space-y-10 max-w-5xl mx-auto animate-in fade-in pb-20">
+                  <h2 className="text-4xl font-black tracking-tight italic">Triage Center</h2>
+                  {aiQueue.length === 0 ? <div className="p-40 text-center opacity-30 italic font-black text-2xl">SCANNING MATRIX...</div> : aiQueue.map(msg => (
+                    <div key={msg.id} className="bg-white rounded-[40px] border p-12 shadow-sm border-l-8 border-l-indigo-600 space-y-8">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-2">
+                          <h3 className="text-2xl font-black cursor-pointer hover:text-indigo-600" onClick={() => goToContact(msg.sender_id)}>{msg.sender_name}</h3>
+                          <p className="text-xs text-slate-400 font-bold uppercase">{msg.group_name || 'Signal Matrix'}</p>
+                        </div>
+                        <span className="px-5 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-black uppercase tracking-widest shadow-sm">Value: {msg.value_score}</span>
+                      </div>
+                      <p className="text-xl font-medium text-slate-600 italic border-l-4 border-indigo-200 pl-6 bg-slate-50/50 py-4 rounded-r-xl">"{msg.message_body}"</p>
+                      <div className="p-8 bg-slate-50 rounded-[32px] border border-slate-100">
+                        <p className="text-[10px] font-black text-indigo-400 uppercase mb-4">Neural Reasoning</p>
+                        <p className="text-xs font-bold text-slate-700 leading-relaxed mb-8">{msg.reasoning}</p>
+                        <div className="grid grid-cols-2 gap-8">
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">📱 Group Draft</label></div>
+                            <textarea className="w-full h-32 bg-slate-900 text-emerald-400 p-6 rounded-[24px] font-mono text-xs outline-none border-2 border-slate-800" defaultValue={msg.group_draft} />
+                            <button onClick={async () => await sendEvolutionWhatsApp(msg.group_jid || msg.sender_id, msg.group_draft)} className="w-full py-4 bg-blue-600 text-white rounded-[20px] text-[10px] font-black uppercase tracking-[0.2em] shadow-lg hover:scale-[1.02] transition-all">🚀 Deploy Group</button>
+                          </div>
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">👤 Personal DM</label></div>
+                            <textarea className="w-full h-32 bg-slate-900 text-purple-300 p-6 rounded-[24px] font-mono text-xs outline-none border-2 border-slate-800" defaultValue={msg.dm_draft} />
+                            <button onClick={async () => { if (await sendEvolutionWhatsApp(msg.sender_id, msg.dm_draft)) setAiQueue(prev => prev.filter(q => q.id !== msg.id)); }} className="w-full py-4 bg-indigo-600 text-white rounded-[20px] text-[10px] font-black uppercase tracking-[0.2em] shadow-lg hover:scale-[1.02] transition-all">🚀 Deploy Private DM</button>
+                          </div>
+                        </div>
+                        <div className="mt-8 flex justify-center"><button onClick={() => setAiQueue(prev => prev.filter(q => q.id !== msg.id))} className="px-8 py-3 text-slate-400 hover:text-rose-500 text-[10px] font-black uppercase tracking-widest transition-all">Archive Signal</button></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
             </div>
-              )}
-
-            {/* TAB: SETTINGS / INFRASTRUCTURE */}
-            {activeTab === 'settings' && (
-              <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in">
-                <h2 className="text-4xl font-black tracking-tight italic">Infrastructure</h2>
-                <div className="grid gap-10">
-                  <section className="bg-white rounded-[48px] border p-12 space-y-8 shadow-sm">
-                    <h3 className="text-2xl font-black flex items-center gap-3"><Icons.Sync /> Evolution Bridge</h3>
-                    <div className="p-6 bg-slate-50 rounded-[24px] border border-slate-100">
-                      <p className="text-xs font-black uppercase text-slate-400 tracking-widest mb-2">Active Connection</p>
-                      <p className="font-mono text-sm text-slate-600 break-all">{config.evolutionApiUrl || 'No API URL Configured'}</p>
-                      <div className="flex gap-4 mt-4">
-                        <span className="px-3 py-1 bg-indigo-100 text-indigo-600 rounded-lg text-[10px] font-black uppercase">Instance: {config.instanceName}</span>
-                        {config.instanceName2 && <span className="px-3 py-1 bg-emerald-100 text-emerald-600 rounded-lg text-[10px] font-black uppercase">Instance 2: {config.instanceName2}</span>}
-                      </div>
-                    </div>
-                  </section>
-                  <section className="bg-white rounded-[48px] border p-12 space-y-8 shadow-sm">
-                    <h3 className="text-2xl font-black flex items-center gap-3"><Icons.Brain /> AI Core</h3>
-                    <div className="flex items-center gap-4 p-6 bg-slate-50 rounded-[24px] border border-slate-100">
-                      <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center"><Icons.Sparkles /></div>
-                      <div>
-                        <p className="text-xs font-black uppercase text-slate-400 tracking-widest">Active Model</p>
-                        <p className="text-lg font-black text-slate-900">GPT-5 Mini (Next Gen)</p>
-                      </div>
-                    </div>
-                  </section>
-                  <button onClick={() => { localStorage.setItem('nexus_config', JSON.stringify(config)); addLog('success', 'Config updated.'); }} className="w-full py-8 bg-indigo-600 text-white rounded-[32px] text-xs font-black uppercase tracking-[0.4em] shadow-2xl hover:scale-[1.02] transition-all">💾 COMMIT INFRASTRUCTURE</button>
-                </div>
-              </div>
-            )}
-
-            {/* TAB: CORE SHELL */}
-            {activeTab === 'command' && (
-              <div className="h-full flex flex-col space-y-10 animate-in fade-in">
-                <h2 className="text-4xl font-black tracking-tight italic">Nexus Core Shell</h2>
-                <div className="flex-1 bg-slate-950 rounded-[48px] border border-slate-800 shadow-2xl flex flex-col p-2 overflow-hidden">
-                  <div className="p-8 border-b border-slate-800 flex justify-between items-center">
-                    <div className="flex gap-2"><div className="w-3 h-3 rounded-full bg-rose-500" /><div className="w-3 h-3 rounded-full bg-amber-500" /><div className="w-3 h-3 rounded-full bg-emerald-500" /></div>
-                    <div className="flex items-center gap-4">
-                      <button
-                        onClick={() => {
-                          localStorage.removeItem('nexus_auth');
-                          localStorage.removeItem('nexus_config');
-                          window.location.reload();
-                        }}
-                        className="px-4 py-2 bg-rose-900/30 text-rose-400 border border-rose-900/50 rounded-lg text-[10px] font-black uppercase hover:bg-rose-900/50 transition-colors"
-                      >
-                        Logout / Reset
-                      </button>
-                      <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">HYBRID-MATRIX-{config.aiProvider}</span>
-                    </div>
-                  </div>
-                  <div className="flex-1 overflow-y-auto p-10 font-mono text-[11px] space-y-6">
-                    {logs.map(log => (
-                      <div key={log.id} className="flex gap-6">
-                        <span className="text-slate-600">[{new Date(log.id).toLocaleTimeString()}]</span>
-                        <span className={`uppercase font-black ${log.type === 'error' ? 'text-rose-400' : log.type === 'ai' ? 'text-indigo-400' : 'text-emerald-400'}`}>{log.type}:</span>
-                        <span className="text-slate-300">{log.text}</span>
-                      </div>
-                    ))}
-                    <div className="flex gap-6"><span className="text-slate-600">[{new Date().toLocaleTimeString()}]</span><span className="text-indigo-400 uppercase font-black">SYSTEM:</span><span className="text-slate-300 animate-pulse">Monitoring signals...</span></div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* AI INBOX */}
-            {activeTab === 'inbox' && (
-              <div className="space-y-10 max-w-5xl mx-auto animate-in fade-in pb-20">
-                <h2 className="text-4xl font-black tracking-tight italic">Triage Center</h2>
-                {aiQueue.length === 0 ? <div className="p-40 text-center opacity-30 italic font-black text-2xl">SCANNING MATRIX...</div> : aiQueue.map(msg => (
-                  <div key={msg.id} className="bg-white rounded-[40px] border p-12 shadow-sm border-l-8 border-l-indigo-600 space-y-8">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-2">
-                        <h3 className="text-2xl font-black cursor-pointer hover:text-indigo-600" onClick={() => goToContact(msg.sender_id)}>{msg.sender_name}</h3>
-                        <p className="text-xs text-slate-400 font-bold uppercase">{msg.group_name || 'Signal Matrix'}</p>
-                      </div>
-                      <span className="px-5 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-black uppercase tracking-widest shadow-sm">Value: {msg.value_score}</span>
-                    </div>
-                    <p className="text-xl font-medium text-slate-600 italic border-l-4 border-indigo-200 pl-6 bg-slate-50/50 py-4 rounded-r-xl">"{msg.message_body}"</p>
-                    <div className="p-8 bg-slate-50 rounded-[32px] border border-slate-100">
-                      <p className="text-[10px] font-black text-indigo-400 uppercase mb-4">Neural Reasoning</p>
-                      <p className="text-xs font-bold text-slate-700 leading-relaxed mb-8">{msg.reasoning}</p>
-                      <div className="grid grid-cols-2 gap-8">
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">📱 Group Draft</label></div>
-                          <textarea className="w-full h-32 bg-slate-900 text-emerald-400 p-6 rounded-[24px] font-mono text-xs outline-none border-2 border-slate-800" defaultValue={msg.group_draft} />
-                          <button onClick={async () => await sendEvolutionWhatsApp(msg.group_jid || msg.sender_id, msg.group_draft)} className="w-full py-4 bg-blue-600 text-white rounded-[20px] text-[10px] font-black uppercase tracking-[0.2em] shadow-lg hover:scale-[1.02] transition-all">🚀 Deploy Group</button>
-                        </div>
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">👤 Personal DM</label></div>
-                          <textarea className="w-full h-32 bg-slate-900 text-purple-300 p-6 rounded-[24px] font-mono text-xs outline-none border-2 border-slate-800" defaultValue={msg.dm_draft} />
-                          <button onClick={async () => { if (await sendEvolutionWhatsApp(msg.sender_id, msg.dm_draft)) setAiQueue(prev => prev.filter(q => q.id !== msg.id)); }} className="w-full py-4 bg-indigo-600 text-white rounded-[20px] text-[10px] font-black uppercase tracking-[0.2em] shadow-lg hover:scale-[1.02] transition-all">🚀 Deploy Private DM</button>
-                        </div>
-                      </div>
-                      <div className="mt-8 flex justify-center"><button onClick={() => setAiQueue(prev => prev.filter(q => q.id !== msg.id))} className="px-8 py-3 text-slate-400 hover:text-rose-500 text-[10px] font-black uppercase tracking-widest transition-all">Archive Signal</button></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-        </div>
           </main >
         </div >
       )}
