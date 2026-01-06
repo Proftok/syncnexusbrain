@@ -37,26 +37,25 @@ const MOCK_DATA: Record<string, any> = {
 
 // --- Config Initializers ---
 const getInitialBaseUrl = () => {
-  // Always prefer the Environment Variable injected by Coolify/Vite
-  let envUrl = (import.meta as any).env?.VITE_API_BASE_URL;
+  let envUrl = import.meta.env.VITE_API_BASE_URL;
   if (!envUrl || !envUrl.includes('http')) {
-    envUrl = (window as any).VITE_API_BASE_URL || 'http://localhost:3001';
+    envUrl = 'https://syncnexus-backend.aifund.co.za';
   }
-  // Remove trailing slash if present to avoid double slashes
   return envUrl.endsWith('/') ? envUrl.slice(0, -1) : envUrl;
 };
 
 const getInitialConfig = () => {
   const saved = localStorage.getItem('nexus_config');
   if (saved) return JSON.parse(saved);
+
   return {
-    evolutionApiUrl: process.env.EVOLUTION_API_URL || '',
-    evolutionApiKey: process.env.EVOLUTION_API_KEY || '',
-    instanceName: process.env.INSTANCE_NAME || 'sa-personal',
-    instanceName2: process.env.INSTANCE_NAME_2 || '',
+    evolutionApiUrl: import.meta.env.VITE_EVOLUTION_API_URL || 'https://evo-vwosg0csks44g8o884g4wc8s.aifund.co.za',
+    evolutionApiKey: import.meta.env.VITE_EVOLUTION_API_KEY || '',
+    instanceName: import.meta.env.VITE_INSTANCE_NAME || 'sa-personal',
+    instanceName2: import.meta.env.VITE_INSTANCE_NAME_2 || '',
     myWhatsAppId: '',
     aiProvider: 'openai',
-    openaiApiKey: process.env.OPENAI_API_KEY || '',
+    openaiApiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
     openaiModel: 'gpt-5-mini',
     persona: 'You are a high-level strategic connector for a bespoke executive network. Your goal is to identify potential members (CEOs, Founders, Investors) and build warm, authentic relationships. You value pedigree, influence, and exclusivity over transactions.',
     scoringRules: `CRITICAL NETWORKING MATRIX (0-100):
